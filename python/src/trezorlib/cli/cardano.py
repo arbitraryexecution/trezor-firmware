@@ -44,7 +44,7 @@ def cli():
     "-s",
     "--signing-mode",
     required=True,
-    type=ChoiceType({m.name: m for m in messages.CardanoTxSigningMode}),
+    type=click.Choice({m.name: m for m in messages.CardanoTxSigningMode}),
 )
 @click.option(
     "-p", "--protocol-magic", type=int, default=cardano.PROTOCOL_MAGICS["mainnet"]

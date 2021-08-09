@@ -448,10 +448,6 @@ if utils.BITCOIN_ONLY:
     import apps.cardano.helpers.protocol_magics
     apps.cardano.helpers.staking_use_cases
     import apps.cardano.helpers.staking_use_cases
-    apps.cardano.helpers.tx_builder
-    import apps.cardano.helpers.tx_builder
-    apps.cardano.helpers.tx_builder_state_machine
-    import apps.cardano.helpers.tx_builder_state_machine
     apps.cardano.helpers.utils
     import apps.cardano.helpers.utils
     apps.cardano.layout
