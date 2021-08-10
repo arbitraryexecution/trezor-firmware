@@ -29,9 +29,8 @@ class CborHashBuilder:
             self.hash_fn.update(chunk)
 
     def get_hash(self) -> bytes:
-        assert (
-            len(self.active_items_stack) == 0
-        ), "The hash calculation is not finished yet"
+        if len(self.active_items_stack) > 0:
+            raise RuntimeError("Hash calculation is not finished yet")
 
         return self.hash_fn.digest()
 
@@ -40,7 +39,9 @@ class CborHashBuilder:
         Add lazy collection to the collection at the top of the stack and then add it to the stack itself.
         The collection at the top of the stack must be a LazyCborList.
         """
-        assert isinstance(self.active_items_stack[-1], LazyCborList)
+        if not isinstance(self.active_items_stack[-1], LazyCborList):
+            raise RuntimeError("Top stack item is not a list")
+
         self.add_item(collection)
         self.active_items_stack.append(collection)
 
@@ -53,7 +54,9 @@ class CborHashBuilder:
         Add lazy collection paired with a key to the collection at the top of the stack and then add it to
         the stack itself. The collection at the top of the stack must be a LazyCborDict.
         """
-        assert isinstance(self.active_items_stack[-1], LazyCborDict)
+        if not isinstance(self.active_items_stack[-1], LazyCborDict):
+            raise RuntimeError("Top stack item is not a dict")
+
         self.add_item((key, collection))
         self.active_items_stack.append(collection)
 
@@ -64,18 +67,25 @@ class CborHashBuilder:
         """
         Add item to the collection at the top of the stack.
         """
-        assert len(self.active_items_stack) > 0
+        if len(self.active_items_stack) == 0:
+            raise RuntimeError("Stack is empty")
+
         self.active_items_stack[-1].append_item(item)
         self._update_hash()
 
     def finish_current_lazy_collection(self) -> None:
-        assert len(self.active_items_stack) > 0
+        if len(self.active_items_stack) == 0:
+            raise RuntimeError("Stack is empty")
+
         collection = self.active_items_stack.pop()
-        assert collection.is_filled(), "The collection is not filled yet"
+        if not collection.is_filled():
+            raise RuntimeError("The collection is not filled yet")
+
         if len(self.active_items_stack) == 0:
             # this was the last collection in the stack, no more PauseIteration left to consume
             return
 
         # consume closing PauseIteration yielded from the parent collection after consuming this item
         remaining_pause_iteration_item = next(self.serializer)
-        assert remaining_pause_iteration_item is LazyCborCollection.PauseIteration
+        if remaining_pause_iteration_item is not LazyCborCollection.PauseIteration:
+            raise RuntimeError("Invalid last item yielded from collection")
