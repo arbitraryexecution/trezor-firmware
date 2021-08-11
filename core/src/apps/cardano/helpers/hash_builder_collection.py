@@ -1,7 +1,7 @@
 from apps.common import cbor
 
 if False:
-    from typing import Any, Generic, Generic as GenericKVP, TypeVar
+    from typing import Any, Generic, TypeVar
     from trezor.utils import HashContext
 
     T = TypeVar("T")
@@ -11,8 +11,7 @@ else:
     T = 0  # type: ignore
     K = 0  # type: ignore
     V = 0  # type: ignore
-    Generic = [object]  # type: ignore
-    GenericKVP = {(0, 0): object}  # type: ignore
+    Generic = {T: object, (K, V): object}  # type: ignore
 
 
 class HashBuilderCollection:
@@ -31,9 +30,8 @@ class HashBuilderCollection:
     def _insert_child(self, child: "HashBuilderCollection") -> None:
         child.parent = self
         assert self.hash_fn is not None
-        child.hash_fn = self.hash_fn
+        child.start(self.hash_fn)
         self.has_unfinished_child = True
-        child.hash_fn.update(child._header_bytes())
 
     def _do_enter_item(self) -> None:
         assert self.hash_fn is not None
@@ -58,14 +56,6 @@ class HashBuilderCollection:
             self.parent.has_unfinished_child = False
         self.hash_fn = None
         self.parent = None
-
-    def finish_and_get_hash(self) -> bytes:
-        assert self.hash_fn is not None
-        hash = self.hash_fn.digest()
-
-        self.finish()
-
-        return hash
 
     def __enter__(self) -> "HashBuilderCollection":
         assert self.hash_fn is not None
@@ -92,7 +82,7 @@ class HashBuilderList(HashBuilderCollection, Generic[T]):
         return cbor.create_array_header(self.size)
 
 
-class HashBuilderDict(HashBuilderCollection, GenericKVP[K, V]):
+class HashBuilderDict(HashBuilderCollection, Generic[K, V]):
     def add(self, key: K, value: V) -> V:
         self._do_enter_item()
         # enter key, this must not nest

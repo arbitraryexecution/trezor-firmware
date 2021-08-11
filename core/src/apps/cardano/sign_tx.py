@@ -139,15 +139,16 @@ async def sign_tx(
         )
     )
 
+    hash_fn = hashlib.blake2b(outlen=32)
     tx_dict: HashBuilderDict[int, Any] = HashBuilderDict(tx_body_map_item_count)
-    tx_dict.start(hashlib.blake2b(outlen=32))
-
-    await _process_transaction(ctx, msg, keychain, tx_dict)
+    tx_dict.start(hash_fn)
+    with tx_dict:
+        await _process_transaction(ctx, msg, keychain, tx_dict)
 
     await _confirm_transaction(ctx, msg, is_network_id_verifiable)
 
     try:
-        tx_hash = tx_dict.finish_and_get_hash()
+        tx_hash = hash_fn.digest()
         response_after_witnesses = await _process_witnesses(
             ctx, keychain, tx_hash, msg.witnesses_count, msg.signing_mode
         )
