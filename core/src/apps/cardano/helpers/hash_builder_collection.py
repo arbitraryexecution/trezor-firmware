@@ -62,10 +62,8 @@ class HashBuilderCollection:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        if exc_val:
-            raise exc_val
-
-        self.finish()
+        if exc_type is None:
+            self.finish()
 
 
 class HashBuilderList(HashBuilderCollection, Generic[T]):
